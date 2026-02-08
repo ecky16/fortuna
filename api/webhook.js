@@ -17,11 +17,11 @@ export default async function handler(req, res) {
 
     // Konfigurasi dari Environment Variables Vercel
     const device = new Mikrotik({
-        host: process.env.MT_HOST,     // id-21.hostddns.us
-        user: process.env.MT_USER,
-        password: process.env.MT_PASSWORD,
-        port: 7072                     // Port DDNS Mas
-    });
+    host: process.env.MT_HOST,
+    user: process.env.MT_USER,
+    password: process.env.MT_PASSWORD,
+    port: process.env.MT_PORT || 7072 // Mengambil dari Vercel, jika kosong pakai 7072
+});
 
     try {
         if (!macTarget) {
