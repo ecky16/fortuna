@@ -1,3 +1,5 @@
+const fetch = require('node-fetch');
+const MikrotikClient = require('mikrotik-client');
 const MikrotikClient = require('mikrotik-client');
 
 export default async function handler(req, res) {
