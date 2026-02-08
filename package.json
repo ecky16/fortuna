@@ -1,7 +1,9 @@
 {
   "name": "mikrotik-bot-control",
   "version": "1.0.0",
+  "main": "api/webhook.js",
   "dependencies": {
-    "mikrotik-client": "^1.2.1"
+    "mikrotik-client": "^1.2.1",
+    "node-fetch": "^2.6.7"
   }
 }
