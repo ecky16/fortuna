@@ -1,49 +1,67 @@
 const fetch = require('node-fetch');
-const MikrotikClient = require('mikrotik-client');
-const MikrotikClient = require('mikrotik-client');
+const Mikrotik = require('mikrotik-node');
 
 export default async function handler(req, res) {
-  // 1. Kirim respon OK secepat mungkin ke Telegram supaya tidak dianggap error 500
-  if (req.method !== 'POST') return res.status(200).json({ status: 'ok' });
+    // Menghindari error jika diakses langsung lewat browser
+    if (req.method !== 'POST') {
+        return res.status(200).send('Bot MikroTik Mas Ecky Ready!');
+    }
 
-  const { message } = req.body;
-  if (!message || !message.text) return res.status(200).send('ok');
+    const { message } = req.body;
+    if (!message || !message.text) return res.status(200).send('ok');
 
-  const chatId = message.chat.id;
-  const text = message.text;
+    const chatId = message.chat.id;
+    const lines = message.text.split('\n');
+    const command = lines[0].toLowerCase(); // Baris 1: /hpibuk_off
+    const macTarget = lines[1] ? lines[1].trim() : null; // Baris 2: MAC
 
-  try {
-    // 2. Cek apakah ini perintah yang benar
-    if (text.includes('/hpibuk')) {
-      // Masukkan langsung ke log vercel untuk debugging
-      console.log("Mencoba konek ke MikroTik...");
-      
-      const client = new MikrotikClient({
-        host: process.env.MT_HOST,
+    // Konfigurasi dari Environment Variables Vercel
+    const device = new Mikrotik({
+        host: process.env.MT_HOST,     // id-21.hostddns.us
         user: process.env.MT_USER,
         password: process.env.MT_PASSWORD,
-        port: 7072
-      });
+        port: 7072                     // Port DDNS Mas
+    });
 
-      await client.connect();
-      // Tes sederhana: ambil identitas mikrotik
-      await client.write(['/system/identity/print']);
-      await sendTelegram(chatId, "✅ Koneksi ke MikroTik Sukses!");
-      client.close();
+    try {
+        if (!macTarget) {
+            await sendTelegram(chatId, "⚠️ Mas, masukkan MAC Address di baris kedua ya.");
+            return res.status(200).send('ok');
+        }
+
+        await device.connect();
+
+        if (command.includes('_off')) {
+            // Aktifkan Rule Drop (Internet Mati)
+            await device.write([
+                '/ip/firewall/filter/enable',
+                `=.id=[/ip/firewall/filter/find src-mac-address="${macTarget}"]`
+            ]);
+            await sendTelegram(chatId, `🚫 Akses untuk [${macTarget}] Berhasil DIMATIKAN.`);
+        } 
+        else if (command.includes('_on')) {
+            // Matikan Rule Drop (Internet Nyala)
+            await device.write([
+                '/ip/firewall/filter/disable',
+                `=.id=[/ip/firewall/filter/find src-mac-address="${macTarget}"]`
+            ]);
+            await sendTelegram(chatId, `✅ Akses untuk [${macTarget}] Berhasil DINYALAKAN.`);
+        }
+        
+        device.close();
+    } catch (err) {
+        console.error(err);
+        await sendTelegram(chatId, "❌ Wah, gagal konek ke MikroTik: " + err.message);
     }
-  } catch (err) {
-    console.error("Detail Error:", err.message);
-    await sendTelegram(chatId, "❌ Error: " + err.message);
-  }
 
-  return res.status(200).send('ok');
+    return res.status(200).send('ok');
 }
 
 async function sendTelegram(chatId, text) {
-  await fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text: text })
-  });
+    const token = process.env.BOT_TOKEN;
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text: text })
+    });
 }
-
