@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     host: process.env.MT_HOST,
     user: process.env.MT_USER,
     password: process.env.MT_PASSWORD,
-    port: 1111
+    port: 7072
   };
 
   const client = new MikrotikClient(mtConfig);
