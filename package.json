@@ -1,0 +1,7 @@
+{
+  "name": "mikrotik-bot-control",
+  "version": "1.0.0",
+  "dependencies": {
+    "mikrotik-client": "^1.2.1"
+  }
+}
